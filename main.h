@@ -24,6 +24,12 @@
  * @fmt: The format.
  * @fn: The function associated.
  */
+<<<<<<< HEAD
+=======
+#include<unistd.h>
+#include<stdlib.h>
+#include<stdarg.h>
+>>>>>>> a8410a687da3bceac5afcfd6a54231059b2942fc
 struct fmt
 {
 	char fmt;
@@ -114,4 +120,8 @@ int is_digit(char);
 long int convert_size_number(long int num, int size);
 long int convert_size_unsgnd(unsigned long int num, int size);
 
+<<<<<<< HEAD
 #endif
+=======
+#endif /* MAIN_H */
+>>>>>>> a8410a687da3bceac5afcfd6a54231059b2942fc
