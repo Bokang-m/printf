@@ -1,90 +1,126 @@
-#include "main.h"
+#include <stdarg.h>
+#include <stdlib.h>
+#include <unistd.h>
 
-void cleanup(va_list args, buffer_t *output);
-int run_printf(const char *format, va_list args, buffer_t *output);
+#define BUFF_SIZE 1024
+
+/**
+ * struct buffer_s - buffer structure
+ * @buffer: buffer array
+ * @start: starting index of buffer to write from
+ * @index: current index of buffer to write to
+ * @total: total characters written to buffer
+ */
+typedef struct buffer_s
+{
+    char buffer[BUFF_SIZE];
+    int start;
+    int index;
+    int total;
+} buffer_t;
+
 int _printf(const char *format, ...);
+buffer_t *init_buffer(void);
+void write_buffer(buffer_t *output);
+void free_buffer(buffer_t *output);
+int _putchar(char c);
+int print_char(buffer_t *output, char c);
+int print_string(buffer_t *output, char *str);
+int print_int(buffer_t *output, int n);
+int get_flags(const char *format, int *i);
+int get_width(const char *format, int *i, va_list list);
+int get_precision(const char *format, int *i, va_list list);
+int get_size(const char *format, int *i);
+int handle_print(const char *format, int *i, va_list list, buffer_t *output, int flags, int width, int precision, int size);
 
-/**
- * cleanup - Peforms cleanup operations for _printf.
- * @args: A va_list of arguments provided to _printf.
- * @output: A buffer_t struct.
- */
-void cleanup(va_list args, buffer_t *output)
-{
-	va_end(args);
-	write(1, output->start, output->len);
-	free_buffer(output);
-}
-
-/**
- * run_printf - Reads through the format string for _printf.
- * @format: Character string to print - may contain directives.
- * @output: A buffer_t struct containing a buffer.
- * @args: A va_list of arguments.
- *
- * Return: The number of characters stored to output.
- */
-int run_printf(const char *format, va_list args, buffer_t *output)
-{
-	int i, wid, prec, ret = 0;
-	char tmp;
-	unsigned char flags, len;
-	unsigned int (*f)(va_list, buffer_t *,
-			unsigned char, int, int, unsigned char);
-
-	for (i = 0; *(format + i); i++)
-	{
-		len = 0;
-		if (*(format + i) == '%')
-		{
-			tmp = 0;
-			flags = handle_flags(format + i + 1, &tmp);
-			wid = handle_width(args, format + i + tmp + 1, &tmp);
-			prec = handle_precision(args, format + i + tmp + 1,
-					&tmp);
-			len = handle_length(format + i + tmp + 1, &tmp);
-
-			f = handle_specifiers(format + i + tmp + 1);
-			if (f != NULL)
-			{
-				i += tmp + 1;
-				ret += f(args, output, flags, wid, prec, len);
-				continue;
-			}
-			else if (*(format + i + tmp + 1) == '\0')
-			{
-				ret = -1;
-				break;
-			}
-		}
-		ret += _memcpy(output, (format + i), 1);
-		i += (len != 0) ? 1 : 0;
-	}
-	cleanup(args, output);
-	return (ret);
-}
-
-/**
- * _printf - Outputs a formatted string.
- * @format: Character string to print - may contain directives.
- *
- * Return: The number of characters printed.
- */
 int _printf(const char *format, ...)
 {
-	buffer_t *output;
-	va_list args;
-	int ret;
+    va_list list;
+    buffer_t *output;
+    int i, printed, flags, width, precision, size;
 
-	if (format == NULL)
-		return (-1);
-	output = init_buffer();
-	if (output == NULL)
-		return (-1);
+    if (format == NULL)
+        return (-1);
 
-	va_start(args, format);
+    output = init_buffer();
+    if (output == NULL)
+        return (-1);
 
-	ret = run_printf(format, args, output);
+    va_start(list, format);
 
-	return (ret);
+    for (i = 0, printed = 0; format[i] != '\0'; i++)
+    {
+        if (format[i] == '%')
+        {
+            flags = get_flags(format, &i);
+            width = get_width(format, &i, list);
+            precision = get_precision(format, &i, list);
+            size = get_size(format, &i);
+            printed += handle_print(format, &i, list, output, flags, width, precision, size);
+        }
+        else
+        {
+            printed += print_char(output, format[i]);
+        }
+    }
+
+    va_end(list);
+
+    write_buffer(output);
+    free_buffer(output);
+
+    return (printed);
 }
+
+buffer_t *init_buffer(void)
+{
+    buffer_t *output;
+
+    output = malloc(sizeof(buffer_t));
+    if (output == NULL)
+        return (NULL);
+
+    output->start = 0;
+    output->index = 0;
+    output->total = 0;
+
+    return (output);
+}
+
+void write_buffer(buffer_t *output)
+{
+    if (output == NULL || output->index == 0)
+        return;
+
+    write(1, output->buffer + output->start, output->index - output->start);
+    output->total += output->index - output->start;
+    output->start = output->index;
+}
+
+void free_buffer(buffer_t *output)
+{
+    free(output);
+}
+
+int _putchar(char c)
+{
+    return (write(1, &c, 1));
+}
+
+int print_char(buffer_t *output, char c)
+{
+    if (output == NULL)
+        return (-1);
+
+    if (output->index == BUFF_SIZE)
+        write_buffer(output);
+
+    output->buffer[output->index++] = c;
+
+    return (1);
+}
+
+int print_string(buffer_t *output, char *str)
+{
+    int i, len
+
